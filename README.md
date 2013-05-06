@@ -9,15 +9,17 @@ The json data type can be used to store JSON (JavaScript Object Notation) data, 
 
 The following functions are related to the JSON datatype:
 * `array_to_json(anyarray [, pretty_bool])` returns the array as JSON. A PostgreSQL multidimensional array becomes a JSON array of arrays. Line feeds will be added between dimension 1 elements if `pretty_bool` is true.
-```sql
-select array_to_json('{{1,5},{99,100}}'::int[]);
+
+```
+SELECT array_to_json('{{1,5},{99,100}}'::integer[]);
 array_to_json   
 ------------------
 [[1,5],[99,100]]
 ```
 * `row_to_json(record [, pretty_bool])` Returns the row/record as JSON. Line feeds will be added between level 1 elements if pretty_bool is true.
-```sql
-select row_to_json(row(1,'foo')) ;
+
+```
+SELECt row_to_json(row(1,'foo')) ;
 
 row_to_json     
 ---------------------
@@ -26,7 +28,7 @@ row_to_json
 
 Usage examples:
 ---------------
-```sql
+```
 > \d json_example_1
 
 Table "public.json_example_1"
@@ -40,7 +42,7 @@ Indexes:
 "json_example_1_pkey" PRIMARY KEY, btree (a)
 ```
 
-```sql
+```
 > SELECT * FROM json_example_1;
 
 a | b |   c   | d 
@@ -50,7 +52,7 @@ a | b |   c   | d
 (2 rows)
 ```
 
-```sql
+```
 > SELECT row_to_json(rows) FROM (SELECT * FROM json_example_1) AS rows;
 
           row_to_json             
@@ -60,7 +62,7 @@ a | b |   c   | d
 (2 rows)
 ```
 
-```sql
+```
 > SELECT row_to_json(rows, true) FROM (SELECT * FROM json_example_1) AS rows;
 
   row_to_json  
@@ -75,9 +77,9 @@ a | b |   c   | d
   "d":true}
 (2 rows)
 ``` 
-Something a bit more challenging:
+Something a bit more interesting: Nested JSON.
 
-```sql
+```
 > \d json_example_2
 
 Table "public.json_example_2"
@@ -90,7 +92,7 @@ Indexes:
 "json_example_2_pkey" PRIMARY KEY, btree (a)
 ```
 
-```sql
+```
 > SELECT * FROM json_example_2;
  a |                  b                   |    c    
 ---+--------------------------------------+---------
@@ -98,7 +100,7 @@ Indexes:
 (1 row)
 ```
 
-```sql
+```
 > SELECT row_to_json(rows) FROM (SELECT * FROM json_example_2) AS rows;
 
 row_to_json                          
@@ -107,8 +109,9 @@ row_to_json
 (1 row)
 ```
 
-```sql
+```
 > SELECT row_to_json(rows,true) FROM (SELECT * FROM json_example_2) AS rows;
+
 row_to_json                 
 --------------------------------------------
 {"a":1,                                   +
