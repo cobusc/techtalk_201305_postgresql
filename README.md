@@ -211,6 +211,7 @@ SELECT * FROM person WHERE current_mood = 'happy';
 ------+--------------
  Moe  | happy
 (1 row)
+```
 
 The ordering of the values in an enum type is the order in which the values were listed when the type was created. All standard comparison operators and related aggregate functions are supported for enums. For example:
 ```
