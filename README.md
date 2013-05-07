@@ -2,37 +2,28 @@ TechTalk May 2013: YAPP
 =======================
 Yet another PostgreSQL presentation.
 
-1. JSON datatype
-2. ENUM datatype
-3. HStore datatype
+1. JSON data type
+2. ENUM data type
+3. HStore data type
 4. Heroku Postgresql
 
-# 1. JSON datatype
-PostgreSQL 9.2 (released 2012-09-10, but for some reason not included in Ubuntu 13.04) introduced the JSON datatype.
+# 1. JSON data type
+PostgreSQL 9.2 (released 2012-09-10, but for some reason not included in Ubuntu 13.04) introduced the JSON data type.
 
-The jJSON data type can be used to store JSON (JavaScript Object Notation) data, as specified in RFC 4627. Such data can also be stored as text, but the json data type has the advantage of checking that each stored value is a _valid_ JSON value. 
+The JSON data type can be used to store JSON (JavaScript Object Notation) data, as specified in RFC 4627. Such data can also be stored as text, but the JSON data type has the advantage of checking that each stored value is a _valid_ JSON value. 
 
-The following functions are related to the JSON datatype:
-* `array_to_json(anyarray [, pretty_bool])` returns the array as JSON. A PostgreSQL multidimensional array becomes a JSON array of arrays. Line feeds will be added between dimension 1 elements if `pretty_bool` is true.
+The function `row_to_json(record [, pretty_bool])` returns the row/record as JSON. Line feeds will be added between level 1 elements if pretty\_bool is true.
 
+Usage examples:
+---------------
 ```
-SELECT array_to_json('{{1,5},{99,100}}'::integer[]);
-array_to_json   
-------------------
-[[1,5],[99,100]]
-```
-* `row_to_json(record [, pretty_bool])` Returns the row/record as JSON. Line feeds will be added between level 1 elements if pretty_bool is true.
-
-```
-SELECt row_to_json(row(1,'foo')) ;
+SELECT row_to_json(ROW(1,'foo')) ;
 
 row_to_json     
 ---------------------
 {"f1":1,"f2":"foo"}
 ```
 
-Usage examples:
----------------
 ```
 > \d json_example_1
 
@@ -246,53 +237,79 @@ Larry
 (1 row)
 ```
 
+
 # 3. HStore
-HStore is an optional module included since PostgreSQL 9.0. It provides key-value store functionality similar to a number of "NoSQL" solutions. 
+HStore is an optional module included with PostgreSQL. It provides key-value store functionality similar to a number of "NoSQL" solutions, e.g. SimpleDB, Casandra.
 
 ```
 CREATE EXTENSION IF NOT EXISTS hstore;
-```
 
+CREATE TYPE supported_mime_types AS ENUM ('image/jpeg', 'image/png', 'audio/mpeg', 'video/mp4');
 
-
-
-For example, say you wanted to store user profile data as a set of key-value data. First, you'd load HStore, since it's an optional module. Next, you'd create a table:
-
-```
-CREATE TABLE user_profile (
-    user_id INT NOT NULL PRIMARY KEY REFERENCES users(user_id),
-    profile HSTORE
+DROP TABLE IF EXISTS playstore_item;
+CREATE TABLE playstore_item
+(
+     id BIGSERIAL PRIMARY KEY,
+     mime_type supported_mime_types,
+     location_url TEXT NOT NULL,
+     metadata HSTORE
 );
 ```
 
-Then you can store key-value data in that table:
+```
+> SELECT * FROM playstore_item;
 
-```
-INSERT INTO user_profile 
-VALUES ( 5, hstore('"Home City"=>"San Francisco","Occupation"=>"Sculptor"');
+ id | mime_type  |      location_url      |                                         metadata                                         
+----+------------+------------------------+------------------------------------------------------------------------------------------
+  1 | image/jpeg | file:///some/dir/a.jpg | "width"=>"100", "height"=>"100", "description"=>"A lion"
+  2 | image/jpeg | file:///some/dir/b.jpg | "width"=>"100", "height"=>"100", "description"=>"A witch"
+  3 | image/jpeg | file:///some/dir/c.jpg | "width"=>"100", "height"=>"100", "description"=>"A wardrobe"
+  4 | audio/mpeg | file:///some/dir/d.mp3 | "album"=>"Some album", "genre"=>"trance", "track"=>"1", "artist"=>"AvB", "length"=>"340"
+  5 | audio/mpeg | file:///some/dir/e.mp3 | "album"=>"Some album", "genre"=>"trance", "track"=>"2", "artist"=>"AvB", "length"=>"350"
+  6 | audio/mpeg | file:///some/dir/f.mp3 | "album"=>"Symbol", "artist"=>"Symbol", "length"=>"200"
+(6 rows)
+
+    
+> SELECT * FROM playstore_item WHERE metadata->'description' ILIKE '%LION%';
+
+ id | mime_type  |      location_url      |                         metadata                         
+----+------------+------------------------+----------------------------------------------------------
+  1 | image/jpeg | file:///some/dir/a.jpg | "width"=>"100", "height"=>"100", "description"=>"A lion"
+(1 row)
+
+
+> SELECT * FROM playstore_item WHERE metadata->'description' NOT ILIKE '%LION%';
+
+ id | mime_type  |      location_url      |                           metadata                           
+----+------------+------------------------+--------------------------------------------------------------
+  2 | image/jpeg | file:///some/dir/b.jpg | "width"=>"100", "height"=>"100", "description"=>"A witch"
+  3 | image/jpeg | file:///some/dir/c.jpg | "width"=>"100", "height"=>"100", "description"=>"A wardrobe"
+(2 rows)
+
+
+> SELECT * FROM playstore_item WHERE metadata::text ILIKE '%symbol%';
+
+ id | mime_type  |      location_url      |                        metadata                        
+----+------------+------------------------+--------------------------------------------------------
+  6 | audio/mpeg | file:///some/dir/f.mp3 | "album"=>"Symbol", "artist"=>"Symbol", "length"=>"200"
+(1 row)
+
+
+> UPDATE playstore_item SET metadata = metadata - 'length'::text;
+
+> SELECT * FROM playstore_item;
+ id | mime_type  |      location_url      |                                metadata                                 
+----+------------+------------------------+-------------------------------------------------------------------------
+  1 | image/jpeg | file:///some/dir/a.jpg | "width"=>"100", "height"=>"100", "description"=>"A lion"
+  2 | image/jpeg | file:///some/dir/b.jpg | "width"=>"100", "height"=>"100", "description"=>"A witch"
+  3 | image/jpeg | file:///some/dir/c.jpg | "width"=>"100", "height"=>"100", "description"=>"A wardrobe"
+  4 | audio/mpeg | file:///some/dir/d.mp3 | "album"=>"Some album", "genre"=>"trance", "track"=>"1", "artist"=>"AvB"
+  5 | audio/mpeg | file:///some/dir/e.mp3 | "album"=>"Some album", "genre"=>"trance", "track"=>"2", "artist"=>"AvB"
+  6 | audio/mpeg | file:///some/dir/f.mp3 | "album"=>"Symbol", "artist"=>"Symbol"
+(6 rows)
 ```
 
-Notice that the format for the HStore strings is a lot like hashes in Perl, but you can also use an array format, and simple JSON objects will probably be supported in 9.1. You probably want to index the keys in the HStore for fast lookup:
-```
-CREATE INDEX user_profile_hstore ON user_profile USING GIN (profile);
-```
-
-Now you can see what keys you have:
-```
-SELECT akeys(profile) FROM user_profile WHERE user_id = 5;
-```
-
-Look up individual keys:
-```
-SELECT profile -> 'Occupation' FROM user_profile;
-```
-
-Or even delete specific keys:
-```
-UPDATE user_profile 
-   SET profile = profile - 'Occupation'::text 
- WHERE user_id = 5;
-```
+Note that you _can_ create indexes on hstore columns.
 
 For all the operators and functions related to the HStore type, see: http://www.postgresql.org/docs/9.2/static/hstore.html
 
@@ -304,8 +321,7 @@ For all the operators and functions related to the HStore type, see: http://www.
 * *Continuous Protection* keeps data safe on Heroku Postgres. Every change to your data is written to write-ahead logs, which are shipped to multi-datacenter, high-durability storage. In the unlikely event of unrecoverable hardware failure, these logs can be automatically 'replayed' to recover the database to within seconds of its last known state.
 * Databases on Heroku Postgres can be used from anywhere and with any Postgres client. Apps can connect to Heroku Postgres from Heroku, Google App Engine, Microsoft Azure, Cloud Foundry, EC2, or from your local computer. PostgreSQL is supported by most modern programming languages - including Perl, Python, Ruby, Scala, Go, Tcl, C/C++, Java, .Net, and Javascript. It is even available via ODBC.
 * There are 8 Heroku Postgres plans. The plans vary primarily by the size of their data cache. Queries made from cached data are 100-1000x faster than from the full data set. Well engineered, high performance, web applications will have 99% or more of their queries be served from cache. Heroku Postgres databases are self-optimizing; they automatically keep frequently accessed data in cache.
-* *Automated Health Checks* Around the clock, Heroku Postgres performs a battery of health checks on every database in operation. These checks ensure that the database is online and working properly. You can sleep well, knowing that if a problem is detected, our 24/7 on-call team is immediately dispatched and our automated recovery software can have you back online in minutes, even in the event of catastrophic hardware failure.
-* Creating production-ready relational databases systems has never been this easy. Forget servers. Forget software packages. And forget ever having to worry about maintenance tasks. Heroku does all the hard work of maintaining it while you focus on building software. Creating a database requires just a single click, and are available in two minutes.
+* *Automated Health Checks* Heroku Postgres performs a battery of health checks on every database in operation. These checks ensure that the database is online and working properly.
 
 
 
