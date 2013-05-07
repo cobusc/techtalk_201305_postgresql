@@ -1,8 +1,13 @@
-TechTalk May 2013: YAPP (Yet another PostgreSQL presentation)
-=============================================================
+TechTalk May 2013: YAPP
+=======================
+Yet another PostgreSQL presentation.
 
-JSON datatype
-=============
+1. JSON datatype
+2. ENUM datatype
+3. HStore datatype
+4. Heroku Postgresql
+
+# 1. JSON datatype
 PostgreSQL 9.2 (released 2012-09-10, but for some reason not included in Ubuntu 13.04) introduced the JSON datatype.
 
 The jJSON data type can be used to store JSON (JavaScript Object Notation) data, as specified in RFC 4627. Such data can also be stored as text, but the json data type has the advantage of checking that each stored value is a _valid_ JSON value. 
@@ -163,8 +168,7 @@ QUERY PLAN
 An interesting link with some performance benchmarks:
 http://blog.hashrocket.com/posts/faster-json-generation-with-postgresql
 
-Enumerated types
-================
+# 2. Enumerated types
 Enumerated types are data types that comprise a static, ordered set of values. They are equivalent to the enum types supported in a number of programming languages. Each enumerated data type is separate and cannot be compared with other enumerated types.
 
 Enumerated types are created using the CREATE TYPE command, for example:
@@ -242,8 +246,7 @@ Larry
 (1 row)
 ```
 
-HStore
-======
+# 3. HStore
 HStore is an optional module included since PostgreSQL 9.0. It provides key-value store functionality similar to a number of "NoSQL" solutions. 
 
 ```
@@ -286,9 +289,24 @@ SELECT profile -> 'Occupation' FROM user_profile;
 
 Or even delete specific keys:
 ```
-UPDATE user_profile SET profile = profile - 'Occupation' 
+UPDATE user_profile 
+   SET profile = profile - 'Occupation'::text 
  WHERE user_id = 5;
 ```
+
+For all the operators and functions related to the HStore type, see: http://www.postgresql.org/docs/9.2/static/hstore.html
+
+# 4. Heroku PostgreSQL
+
+* [Database-as-a-Service](https://postgres.heroku.com/) Provides PostgreSQL 9.2, so I could construct this techtalk using their free dev DB.
+* *Forking* a database is just like forking source code. It creates a perfect, byte-for-byte clone of your database with a single command. Do you have new schema migrations that you need to test? Simply fork your production database and run the new migrations against the fork. Load testing? Fork your database and run your testing environment against it. Forking databases lets you work with your production schema and data without risk or hassle. And when you are done, simply throw the fork away.
+* *Followers* are read-only asynchronous replicas of a database. Followers stay up-to-date with changes to your database and can be queried. Traditionally, setting-up and maintaining replication is a difficult and specialized task. But with followers, it just works. Followers provide horizontal scalability by distributing database read traffic. They are also perfect for real-time analytics — use them to make expensive queries against up-to-date data without affecting application speed and availability.
+* *Continuous Protection* keeps data safe on Heroku Postgres. Every change to your data is written to write-ahead logs, which are shipped to multi-datacenter, high-durability storage. In the unlikely event of unrecoverable hardware failure, these logs can be automatically 'replayed' to recover the database to within seconds of its last known state.
+* Databases on Heroku Postgres can be used from anywhere and with any Postgres client. Apps can connect to Heroku Postgres from Heroku, Google App Engine, Microsoft Azure, Cloud Foundry, EC2, or from your local computer. PostgreSQL is supported by most modern programming languages - including Perl, Python, Ruby, Scala, Go, Tcl, C/C++, Java, .Net, and Javascript. It is even available via ODBC.
+* There are 8 Heroku Postgres plans. The plans vary primarily by the size of their data cache. Queries made from cached data are 100-1000x faster than from the full data set. Well engineered, high performance, web applications will have 99% or more of their queries be served from cache. Heroku Postgres databases are self-optimizing; they automatically keep frequently accessed data in cache.
+* *Automated Health Checks* Around the clock, Heroku Postgres performs a battery of health checks on every database in operation. These checks ensure that the database is online and working properly. You can sleep well, knowing that if a problem is detected, our 24/7 on-call team is immediately dispatched and our automated recovery software can have you back online in minutes, even in the event of catastrophic hardware failure.
+* Creating production-ready relational databases systems has never been this easy. Forget servers. Forget software packages. And forget ever having to worry about maintenance tasks. Heroku does all the hard work of maintaining it while you focus on building software. Creating a database requires just a single click, and are available in two minutes.
+
 
 
 
